@@ -4,5 +4,300 @@
     "latestVersion": "0.8.2",
     "appUrl": "https://raw.githubusercontent.com/JECFMPCabral/med-tools_repo/main/medtools.html"
   },
-  "catalog": []
+  "catalog": [
+    {
+      "key": "glicose",
+      "name": "Glicose",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "azoto ureico",
+      "name": "Azoto Ureico",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "creatinina",
+      "name": "Creatinina (IDMS)",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "sodio",
+      "name": "Sódio",
+      "section": "Bioquímica - Sangue",
+      "unit": "mmol/L"
+    },
+    {
+      "key": "potassio",
+      "name": "Potássio",
+      "section": "Bioquímica - Sangue",
+      "unit": "mmol/L"
+    },
+    {
+      "key": "cloro",
+      "name": "Cloro",
+      "section": "Bioquímica - Sangue",
+      "unit": "mmol/L"
+    },
+    {
+      "key": "calcio",
+      "name": "Calcio",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "osmolalidade",
+      "name": "Osmolalidade",
+      "section": "Bioquímica - Sangue",
+      "unit": "mOSM/Kg"
+    },
+    {
+      "key": "desidrogenase lactica",
+      "name": "Desidrogenase Láctica (L.D.H)",
+      "section": "Bioquímica - Sangue",
+      "unit": "U/L"
+    },
+    {
+      "key": "ast",
+      "name": "AST (GOT)",
+      "section": "Bioquímica - Sangue",
+      "unit": "U/L"
+    },
+    {
+      "key": "alt",
+      "name": "ALT (GPT)",
+      "section": "Bioquímica - Sangue",
+      "unit": "U/L"
+    },
+    {
+      "key": "fosfatase alcalina",
+      "name": "Fosfatase Alcalina",
+      "section": "Bioquímica - Sangue",
+      "unit": "U/L"
+    },
+    {
+      "key": "gama gt",
+      "name": "Gama GT",
+      "section": "Bioquímica - Sangue",
+      "unit": "U/L"
+    },
+    {
+      "key": "bilirrubina total",
+      "name": "Bilirrubina Total",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "creatina cinase",
+      "name": "Creatina cinase (C.K.)",
+      "section": "Bioquímica - Sangue",
+      "unit": "U/L"
+    },
+    {
+      "key": "proteina c reactiva",
+      "name": "Proteína C Reactiva",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "leucocitos",
+      "name": "Leucócitos",
+      "section": "Hemograma com leucograma",
+      "unit": "x10^9/L"
+    },
+    {
+      "key": "neutrofilos",
+      "name": "Neutrófilos",
+      "section": "Hemograma com leucograma",
+      "unit": "x10^9/L"
+    },
+    {
+      "key": "linfocitos",
+      "name": "Linfócitos",
+      "section": "Hemograma com leucograma",
+      "unit": "x10^9/L"
+    },
+    {
+      "key": "monocitos",
+      "name": "Monocitos",
+      "section": "Hemograma com leucograma",
+      "unit": "x10^9/L"
+    },
+    {
+      "key": "eosinofilos",
+      "name": "Eosinófilos",
+      "section": "Hemograma com leucograma",
+      "unit": "x10^9/L"
+    },
+    {
+      "key": "basofilos",
+      "name": "Basófilos",
+      "section": "Hemograma com leucograma",
+      "unit": "x10^9/L"
+    },
+    {
+      "key": "eritrocitos",
+      "name": "Eritrócitos",
+      "section": "Hemograma com leucograma",
+      "unit": "x10^12/L"
+    },
+    {
+      "key": "hemoglobina",
+      "name": "Hemoglobina",
+      "section": "Hemograma com leucograma",
+      "unit": "g/dL"
+    },
+    {
+      "key": "hematocrito",
+      "name": "Hematocrito",
+      "section": "Hemograma com leucograma",
+      "unit": "%"
+    },
+    {
+      "key": "volume corpuscular medio",
+      "name": "Volume Corpuscular Medio",
+      "section": "Hemograma com leucograma",
+      "unit": "fL"
+    },
+    {
+      "key": "hemoglobina corpuscular media",
+      "name": "Hemoglobina Corpuscular Media",
+      "section": "Hemograma com leucograma",
+      "unit": "pg"
+    },
+    {
+      "key": "c.hemoglobina corpuscular media",
+      "name": "C.Hemoglobina Corpuscular Media",
+      "section": "Hemograma com leucograma",
+      "unit": "g/dL"
+    },
+    {
+      "key": "coeficiente variacao eritrocitos",
+      "name": "Coeficiente Variação Eritrócitos",
+      "section": "Hemograma com leucograma",
+      "unit": ""
+    },
+    {
+      "key": "plaquetas",
+      "name": "Plaquetas",
+      "section": "Hemograma com leucograma",
+      "unit": "x10^9/L"
+    },
+    {
+      "key": "volume plaquetar medio",
+      "name": "Volume Plaquetar Medio",
+      "section": "Hemograma com leucograma",
+      "unit": "fL"
+    },
+    {
+      "key": "plaquetocrito",
+      "name": "Plaquetocrito",
+      "section": "Hemograma com leucograma",
+      "unit": "%"
+    },
+    {
+      "key": "coeficiente variacao plaquetas",
+      "name": "Coeficiente Variação Plaquetas",
+      "section": "Hemograma com leucograma",
+      "unit": ""
+    },
+    {
+      "key": "tempo de protrombina",
+      "name": "Tempo de Protrombina (TP)",
+      "section": "Coagulação",
+      "unit": "seg."
+    },
+    {
+      "key": "controlo",
+      "name": "Controlo",
+      "section": "Coagulação",
+      "unit": "seg."
+    },
+    {
+      "key": "protrombinemia",
+      "name": "Protrombinémia",
+      "section": "Coagulação",
+      "unit": "%"
+    },
+    {
+      "key": "relacao normalizada",
+      "name": "Relação Normalizada (INR)",
+      "section": "Coagulação",
+      "unit": ""
+    },
+    {
+      "key": "tempo de tromboplastina parcial activado",
+      "name": "Tempo de Tromboplastina Parcial Activado",
+      "section": "Coagulação",
+      "unit": "seg."
+    },
+    {
+      "key": "ratio",
+      "name": "Ratio",
+      "section": "Coagulação",
+      "unit": ""
+    },
+    {
+      "key": "uratos",
+      "name": "Uratos (Ác. Urico)",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "proteinas totais",
+      "name": "Proteínas Totais",
+      "section": "Bioquímica - Sangue",
+      "unit": "g/dL"
+    },
+    {
+      "key": "albumina",
+      "name": "Albumina",
+      "section": "Bioquímica - Sangue",
+      "unit": "g/dL"
+    },
+    {
+      "key": "colesterol total",
+      "name": "Colesterol Total",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "colesterol hdl",
+      "name": "Colesterol HDL",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "colesterol ldl",
+      "name": "Colesterol LDL",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "triglicerideos",
+      "name": "Triglicerídeos",
+      "section": "Bioquímica - Sangue",
+      "unit": "mg/dL"
+    },
+    {
+      "key": "hemoglobina glicada",
+      "name": "Hemoglobina Glicada (HbA1c,NGSP)",
+      "section": "Bioquímica - Sangue",
+      "unit": "%"
+    },
+    {
+      "key": "fraccao de plaquetas imaturas",
+      "name": "Fracção de Plaquetas imaturas (IPF)",
+      "section": "Hemograma com leucograma",
+      "unit": "%"
+    },
+    {
+      "key": "indice aterogenico",
+      "name": "Índice Aterogénico",
+      "section": "Bioquímica - Sangue",
+      "unit": ""
+    }
+  ]
 }
