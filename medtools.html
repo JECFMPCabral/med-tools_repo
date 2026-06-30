@@ -653,6 +653,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',system-ui,s
               </div>
               <div class="settings-card">
                 <div class="settings-card-title">Copiar resultados</div>
+                <div style="margin-bottom:10px">
+                  <label style="font-size:12px;color:var(--gray-500);display:block;margin-bottom:4px">Texto antes dos resultados</label>
+                  <input type="text" id="pref_copy_prefix" placeholder="(deixar vazio para nenhum)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;font-size:13px" oninput="savePref('analysesCopyPrefix',this.value)">
+                  <div style="font-size:11px;color:var(--gray-500);margin-top:3px">Campos dinâmicos: <code>{data}</code> {nome} {idade} {sexo}</div>
+                </div>
                 <div class="toggle-row"><span>Incluir nome do doente</span><label class="toggle"><input type="checkbox" id="pref_copy_name" onchange="savePref('analysesCopyName',this.checked)"><span class="toggle-slider"></span></label></div>
                 <div class="toggle-row"><span>Incluir data de colheita</span><label class="toggle"><input type="checkbox" id="pref_copy_date" onchange="savePref('analysesCopyDate',this.checked)"><span class="toggle-slider"></span></label></div>
                 <div class="toggle-row"><span>Incluir unidades</span><label class="toggle"><input type="checkbox" id="pref_copy_units" onchange="savePref('analysesCopyUnits',this.checked)"><span class="toggle-slider"></span></label></div>
@@ -941,6 +946,7 @@ const DEFAULT_PREFS = {
   analysesCopyName:false, analysesCopyDate:false, analysesCopyUnits:false, analysesCopyFormat:'inline',
   analysesCopyArrows:true, analysesTableArrows:true, analysesPrintArrows:true,
   analysesDecimalSep:'keep', analysesInlineSep:', ', analysesCopyRefInline:false,
+  analysesCopyPrefix:'Controlo analítico (data da colheita):',
   scoreCha2ds2:false, scoreHasbled:false, scoreHeart:false, scoreGrace:false,
   scoreBarthel:false, scoreMust:false, scoreNrs2002:false, scoreLace:false,
   scoreFena:false, scoreOsmolal:false, scoreAg:false,
@@ -1041,6 +1047,7 @@ function applyPrefsToUI() {
   setCheck('pref_table_arrows', prefs.analysesTableArrows !== false);
   setCheck('pref_print_arrows', prefs.analysesPrintArrows !== false);
   setCheck('pref_copy_ref_inline', prefs.analysesCopyRefInline === true);
+  const pxEl = document.getElementById('pref_copy_prefix'); if (pxEl) pxEl.value = prefs.analysesCopyPrefix != null ? prefs.analysesCopyPrefix : '';
   const dsEl = document.getElementById('pref_decimal_sep'); if (dsEl) dsEl.value = prefs.analysesDecimalSep || 'keep';
   const isEl = document.getElementById('pref_inline_sep');  if (isEl) isEl.value = prefs.analysesInlineSep || ', ';
   document.body.classList.toggle('no-arrows-screen', prefs.analysesTableArrows === false);
@@ -2824,6 +2831,17 @@ function copyAnalisesOutput() {
   if (copyName) txt += `ANÁLISES — ${a.patientName}\n`;
   if (copyDate) txt += `Data: ${a.date}\n`;
   if (copyName || copyDate) txt += '\n';
+  // Texto personalizável antes dos resultados, com placeholders dinâmicos.
+  const prefix = (prefs.analysesCopyPrefix || '').trim();
+  if (prefix) {
+    const sexLabel = a.sex ? (a.sex==='M'?'Masculino':'Feminino') : '';
+    const filled = prefix
+      .replace(/\{data\}/gi,  a.date || '')
+      .replace(/\{nome\}/gi,  a.patientName || '')
+      .replace(/\{idade\}/gi, a.age!=null ? a.age+' anos' : '')
+      .replace(/\{sexo\}/gi,  sexLabel);
+    txt += filled + '\n';
+  }
   if (inline) {
     txt += params.map(p => {
       let s = `${p.name}: ${valOf(p)}${arrOf(p)}${copyUnits && p.unit ? ' '+p.unit : ''}`;
@@ -4872,10 +4890,28 @@ async function pickDownloadsFolder(tab) {
 // ================================================================
 const SPLASH_KEY = 'medtools_splash_seen';
 const VERSION_KEY = 'medtools_version';
-const APP_VERSION = '0.8.1';
+const APP_VERSION = '0.8.2';
 
 // Newest first
 const PATCH_NOTES = [
+  {
+    version: '0.8.2',
+    label: 'Texto personalizável antes dos resultados copiados',
+    summary: [
+      'Campo de texto livre que precede os parâmetros na cópia',
+      'Campos dinâmicos: {data}, {nome}, {idade}, {sexo}',
+    ],
+    sections: [
+      {
+        title: 'Cópia de análises',
+        items: [
+          'Novo campo "Texto antes dos resultados" em Definições › Análises › Copiar resultados',
+          'Predefinição: "Controlo analítico (data da colheita):"',
+          'Suporta placeholders preenchidos automaticamente: {data} {nome} {idade} {sexo}',
+        ]
+      },
+    ]
+  },
   {
     version: '0.8.1',
     label: 'Indicador de versão e Sobre atualizado',
