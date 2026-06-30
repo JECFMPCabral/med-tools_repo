@@ -20,10 +20,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',system-ui,s
 .app-header{background:var(--primary);color:white;padding:14px 24px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .app-header h1{font-size:19px;font-weight:700;letter-spacing:-.3px}
 .app-header .subtitle{font-size:11.5px;opacity:.75;margin-top:1px}
-.cat-badge{margin-left:auto;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.header-badges{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.cat-badge,.ver-badge{font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;display:flex;align-items:center;gap:5px;white-space:nowrap}
 .cat-badge-online{background:rgba(34,197,94,.20);color:#bbf7d0}
 .cat-badge-local{background:rgba(255,255,255,.15);color:#fde68a}
 .cat-badge-sync{background:rgba(255,255,255,.15);color:#e5e7eb}
+.ver-badge-ok{background:rgba(34,197,94,.20);color:#bbf7d0}
+.ver-badge-old{background:rgba(239,68,68,.25);color:#fecaca;cursor:pointer}
+.ver-badge-unknown{background:rgba(255,255,255,.15);color:#e5e7eb}
 .app-update-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--secondary);color:white;padding:8px 24px;font-size:13px}
 .tab-nav{background:white;display:flex;align-items:stretch;gap:0;padding:0 16px;border-bottom:2px solid var(--gray-200);box-shadow:0 1px 3px rgba(0,0,0,.07)}
 .tab-btn{padding:11px 20px;background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;color:var(--gray-500);cursor:pointer;font-size:14px;font-weight:500;border-radius:0;transition:color .15s,border-color .15s;white-space:nowrap;font-family:inherit}
@@ -396,7 +400,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',system-ui,s
     <h1>MedTools</h1>
     <div class="subtitle">ULS Coimbra · Ferramenta local, sem envio de dados</div>
   </div>
-  <div id="catalog-source-badge" class="cat-badge cat-badge-local" title="Origem do catálogo de análises">● Catálogo local</div>
+  <div class="header-badges">
+    <div id="catalog-source-badge" class="cat-badge cat-badge-local" title="Origem do catálogo de análises">● Catálogo local</div>
+    <div id="app-version-badge" class="ver-badge ver-badge-unknown" title="Estado da versão da aplicação">v—</div>
+  </div>
 </header>
 
 <div id="app-update-banner" class="app-update-banner" style="display:none">
@@ -779,12 +786,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',system-ui,s
           <div class="sobre-tech-row"><strong>Plataforma</strong>Aplicação web local (HTML/CSS/JS, ficheiro único)</div>
           <div class="sobre-tech-row"><strong>OCR</strong>Tesseract.js v5 — leitura de prescrições em imagem</div>
           <div class="sobre-tech-row"><strong>PDFs</strong>pdf.js 3.11 — extração de texto de análises</div>
-          <div class="sobre-tech-row"><strong>Dados</strong>Tudo local — sem servidor, sem envio de dados</div>
+          <div class="sobre-tech-row"><strong>Dados clínicos</strong>Tudo local — sem servidor, nunca enviados</div>
+          <div class="sobre-tech-row"><strong>Catálogo</strong>Sincronizado (leitura) com um repositório GitHub público</div>
           <div class="sobre-tech-row"><strong>Preferências</strong>localStorage do browser (nunca dados clínicos)</div>
         </div>
         <div class="sobre-card">
+          <div class="sobre-card-title">Catálogo de análises e atualizações</div>
+          <p style="font-size:13px;color:var(--gray-700);line-height:1.55;margin-bottom:8px">A app mantém um <strong>catálogo de parâmetros</strong> (nomes, secções e unidades — nunca dados de doentes) que é sincronizado em segundo plano, no arranque, a partir de um repositório GitHub público. Funciona offline: sem rede, usa a última cópia local.</p>
+          <ul style="font-size:13px;color:var(--gray-700);line-height:1.6;margin:0 0 8px;padding-left:18px">
+            <li><strong>Aprendizagem:</strong> parâmetros desconhecidos são detetados, realçados na tabela e ficam para revisão em Definições › Análises.</li>
+            <li><strong>Sincronização:</strong> importar/exportar <code>catalogo.json</code> (arrastar e largar) para propagar entre PCs; a app nunca escreve no GitHub.</li>
+            <li><strong>Seleção por defeito:</strong> escolha, por parâmetro, o que vem pré-marcado ao abrir um PDF (preferência pessoal, local).</li>
+            <li><strong>Atualizações da app:</strong> ao sincronizar, a versão é comparada com a publicada no repositório. O cabeçalho mostra <em>✓ versão atual</em> ou <em>▲ atualizar</em>, e surge um aviso com download direto da nova versão.</li>
+          </ul>
+          <p style="font-size:12px;color:var(--gray-500);line-height:1.5;margin:0">Indicadores no cabeçalho: <strong>● Catálogo online/local</strong> (origem do catálogo) e <strong>estado da versão</strong> ao lado.</p>
+        </div>
+        <div class="sobre-card">
           <div class="sobre-card-title">Privacidade</div>
-          <p style="font-size:13px;color:var(--gray-700);line-height:1.55">Nenhum dado clínico sai do browser. Todo o processamento OCR e extração de texto é feito localmente. As preferências são guardadas apenas no localStorage deste browser.</p>
+          <p style="font-size:13px;color:var(--gray-700);line-height:1.55">Nenhum dado clínico sai do browser. O OCR e a extração de texto são feitos localmente, e as preferências ficam só no localStorage deste browser. O único acesso à rede é a <strong>leitura</strong> do catálogo público e da informação de versão no GitHub — nunca é enviado qualquer dado de doente.</p>
         </div>
         <div class="sobre-actions">
           <button class="btn btn-secondary" onclick="openSplash()">Ver ecrã inicial</button>
@@ -2457,15 +2476,31 @@ function cmpVer(a, b) {
   for (let i = 0; i < 3; i++) { if ((pa[i]||0) < (pb[i]||0)) return -1; if ((pa[i]||0) > (pb[i]||0)) return 1; }
   return 0;
 }
+function setVersionBadge(state, latest) {
+  const vb = document.getElementById('app-version-badge');
+  if (!vb) return;
+  if (state === 'ok') {
+    vb.className = 'ver-badge ver-badge-ok'; vb.textContent = '✓ v' + APP_VERSION;
+    vb.title = 'Está na versão mais recente'; vb.onclick = null;
+  } else if (state === 'old') {
+    vb.className = 'ver-badge ver-badge-old'; vb.textContent = '▲ v' + APP_VERSION + ' — atualizar';
+    vb.title = 'Nova versão disponível: ' + latest + '. Clique para descarregar.';
+    vb.onclick = () => { const b = document.getElementById('app-update-banner'); if (b) b.style.display = 'flex'; };
+  } else {
+    vb.className = 'ver-badge ver-badge-unknown'; vb.textContent = 'v' + APP_VERSION;
+    vb.title = 'Estado da versão por confirmar (a sincronizar…)'; vb.onclick = null;
+  }
+}
 function checkAppUpdate(latest) {
   const b = document.getElementById('app-update-banner');
-  if (!b) return;
   if (latest && cmpVer(APP_VERSION, latest) < 0) {
     const t = document.getElementById('app-update-text');
     if (t) t.textContent = `Nova versão do MedTools disponível: ${latest} (tens a ${APP_VERSION}).`;
-    b.style.display = 'flex';
+    if (b) b.style.display = 'flex';
+    setVersionBadge('old', latest);
   } else {
-    b.style.display = 'none';
+    if (b) b.style.display = 'none';
+    setVersionBadge(latest ? 'ok' : 'unknown', latest);
   }
 }
 async function downloadLatestApp() {
@@ -4837,10 +4872,34 @@ async function pickDownloadsFolder(tab) {
 // ================================================================
 const SPLASH_KEY = 'medtools_splash_seen';
 const VERSION_KEY = 'medtools_version';
-const APP_VERSION = '0.8.0';
+const APP_VERSION = '0.8.1';
 
 // Newest first
 const PATCH_NOTES = [
+  {
+    version: '0.8.1',
+    label: 'Indicador de versão e Sobre atualizado',
+    summary: [
+      'Novo indicador de versão (atual / a atualizar) ao lado do catálogo',
+      'Separador Sobre descreve catálogo, sincronização e atualizações',
+    ],
+    sections: [
+      {
+        title: 'Cabeçalho',
+        items: [
+          'Badge de versão ao lado do indicador de catálogo: "✓ vX" se atual, "▲ vX — atualizar" se houver versão mais recente',
+          'O badge de versão é clicável e abre o aviso de download quando desatualizado',
+        ]
+      },
+      {
+        title: 'Sobre',
+        items: [
+          'Nova secção a explicar o catálogo de análises, sincronização GitHub, seleção por defeito e atualizações da app',
+          'Texto de privacidade clarificado: o único acesso à rede é a leitura do catálogo público',
+        ]
+      },
+    ]
+  },
   {
     version: '0.8.0',
     label: 'Atualização da app e indicador de catálogo',
@@ -5213,6 +5272,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderNewParamsPanel();
   renderDefaultSelEditor();
   updateSyncStatus();
+  // estado de versão a partir da cópia em cache (mostra logo, mesmo offline)
+  if (catalogRemote && catalogRemote.config) { _appUpdateUrl = catalogRemote.config.appUrl || ''; checkAppUpdate(catalogRemote.config.latestVersion); }
+  else setVersionBadge('unknown');
   syncCatalog(false); // best-effort, não-bloqueante
   loadHorarios();
   setupDropzones();
