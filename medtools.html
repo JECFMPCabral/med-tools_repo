@@ -2083,6 +2083,38 @@ function buildRowParam(name, section, c) {
   return p;
 }
 
+// --- Serologias infecciosas (CMV, HSV, EBV, Treponema): resultado qualitativo
+// + interpretação, em vez do método "(CLIA)/(CMIA)" e do valor bruto. ---
+const SER_QUAL_RE = /^(positivo|negativo|equ[íi]voco|reactivo|n[ãa]o\s*reactivo|reagente|n[ãa]o\s*reagente|detectad[oa]|n[ãa]o\s*detectad[oa]|indeterminado)$/i;
+const SER_METHOD_RE = /^\(?\s*(cmia|clia|cleia|elia|elisa|eia|meia|qf|ifi?|hai|pcr|cliaa)\s*\)?$/i;
+function cleanSerName(nameStr) {
+  let s = nameStr.replace(/^Ac\.?\s+(para|p\/)\s+/i, '').replace(/^Anticorpos?\s+(para|p\/)\s+/i, '');
+  // Remove fragmentos de referência/rótulos que se colam ao nome nesta layout.
+  const toks = s.split(/\s+/).filter(t => {
+    if (!t) return false;
+    if (/^(positivo|negativo|equ[íi]voco|equivoco)\s*:$/i.test(t)) return false; // rótulo de referência
+    if (/^(qualitativo|resultado):?$/i.test(t)) return false;
+    if (/^[«»<>]/.test(t)) return false;   // limites de referência
+    if (/^\d/.test(t)) return false;        // números
+    if (isKnownUnit(t)) return false;       // unidades conhecidas
+    if (/^[A-Za-zµ]{1,4}\/[A-Za-zµ]{1,3}$/.test(t) && !/^Ig/i.test(t)) return false; // AU/mL, S/CO, UI/mL (mas não IgG/IgM)
+    if (t === '-' || t === '–' || t === ':') return false;
+    return true;
+  });
+  return toks.join(' ').replace(/\s*[-–]\s*/g, ' ').replace(/\s+/g, ' ').trim();
+}
+// Nome do agente a partir de "Serologia - X", tolerante a linhas fundidas com
+// referências (ex.: "Serologia Positivo: - TREPONEMA »1.0 PALLIDUM" → "Treponema Pallidum").
+function serAgentFrom(nameStr) {
+  if (!/\bSerologia\b/i.test(nameStr) || !/[-–]/.test(nameStr)) return null;
+  const caps = nameStr.split(/\s+/).filter(t => /^[A-ZÀ-Ý][A-ZÀ-Ý\-]{2,}$/.test(t) && !/^SEROLOGIA$/i.test(t));
+  return caps.length ? titleCase(caps.join(' ')) : null;
+}
+function mkSerParam(name, valueStr, reference) {
+  return { name, section:'Serologia', value:null, valueStr: valueStr || '—', unit:'', unit2:'',
+           value2:null, reference: reference || '', reference2:'', previousValues:[], isAltered:false, alteredDir:null };
+}
+
 function parseAnalises(lines, rows) {
   const r = {patientName:'', sex:'', age:null, dob:'', date:'', parameters:[], rawLines:lines};
 
@@ -2119,13 +2151,51 @@ function parseAnalises(lines, rows) {
   }
 
   // Column-based parameter extraction from rows
-  let section = '', lastParam = null;
+  let section = '', lastParam = null, serAgent = null, serEntry = null;
+  const flushSer = () => { if (serEntry) { r.parameters.push(serEntry); serEntry = null; } };
   for (const row of rows) {
     const c = classifyRowItems(row.items);
     const nameStr = c.name.join(' ').trim();
+    const valStr = c.value.join(' ').trim();
     const unitStr = c.unit.join('').trim();
     const hasUnit = isKnownUnit(unitStr) || c.value.some(v => tryExtractUnitFromValue(v));
     const hasNumVal = c.value.some(v => /^[<>]?\s*\d[\d,\.]*$/.test(v) || tryExtractUnitFromValue(v));
+
+    // --- Serologia (CMV, HSV, EBV, Treponema): resultado qualitativo + interpretação ---
+    const newAgent = serAgentFrom(nameStr);
+    const hasInterp = /Interpreta[çc][ãa]o/i.test(nameStr);
+    if (hasInterp && serAgent) {
+      flushSer();
+      const interp = row.items.filter(it => it.x >= 200).map(it => it.text).join(' ').replace(/\s+/g, ' ').trim();
+      if (interp) r.parameters.push(mkSerParam(serAgent + ' — Interpretação', interp));
+      if (newAgent) { serAgent = newAgent; section = 'Serologia'; } // agente seguinte colado à mesma linha
+      continue;
+    }
+    if (newAgent) { flushSer(); serAgent = newAgent; section = 'Serologia'; continue; }
+    if (serAgent) {
+      // Sair da serologia: secção normal, ou bloco hepatite/HIV/leptospira (formato diferente)
+      if ((nameStr && isSectionLine(nameStr)) || /^(hepatite|infec[çc][ãa]o|hiv)\b/i.test(nameStr) || /^serologia\b/i.test(nameStr.trim())) {
+        flushSer(); serAgent = null; // cai para o tratamento normal abaixo
+      } else {
+        // Linha de nome de teste (Ac. para ... IgG/IgM, Sífilis screening, EBV-VCA...)
+        if (/(Ig[GMAE]|screening)/i.test(nameStr) && /(Ac\.?\s+para|Anticorpos?\s+para|Sífilis|EBV|HSV|Toxo|Rub[ée]ola|Citomegalo)/i.test(nameStr)) {
+          flushSer();
+          serEntry = mkSerParam(cleanSerName(nameStr), '');
+          if (valStr && SER_QUAL_RE.test(valStr)) serEntry.valueStr = valStr;
+          continue;
+        }
+        if (SER_METHOD_RE.test(nameStr)) continue;             // "(CMIA)/(CLIA)" → ignorar (era o ruído)
+        if (valStr && SER_QUAL_RE.test(valStr)) {              // resultado qualitativo isolado na coluna de valor
+          if (serEntry && (!serEntry.valueStr || serEntry.valueStr === '—')) serEntry.valueStr = valStr;
+          continue;
+        }
+        if (/^Qualitativo/i.test(nameStr)) {
+          if (serEntry && valStr && SER_QUAL_RE.test(valStr)) serEntry.valueStr = valStr;
+          continue;
+        }
+        continue; // ruído (referências, comentários, validações) dentro do bloco
+      }
+    }
 
     if (!hasUnit && !hasNumVal) {
       if (nameStr && isSectionLine(nameStr)) section = nameStr;
@@ -2157,6 +2227,7 @@ function parseAnalises(lines, rows) {
       }
     }
   }
+  flushSer();
   inferMissingNames(r.parameters);
   r.microbiology = parseMicrobiology(lines);
   return r;
@@ -2412,6 +2483,7 @@ function reconcileCatalog(params) {
   const localByKey = new Map(catalogLocal.map(e => [e.key, e]));
   let added = false;
   for (const p of params) {
+    if (!p.name || p.name === '?') { p._key = ''; p._isNew = false; continue; } // não catalogar anónimos
     const key = normKey(p.name);
     p._key = key;
     if (cur.has(key)) { p._isNew = false; continue; }
@@ -4920,10 +4992,28 @@ async function pickDownloadsFolder(tab) {
 // ================================================================
 const SPLASH_KEY = 'medtools_splash_seen';
 const VERSION_KEY = 'medtools_version';
-const APP_VERSION = '0.8.3';
+const APP_VERSION = '0.8.4';
 
 // Newest first
 const PATCH_NOTES = [
+  {
+    version: '0.8.4',
+    label: 'Leitura de serologias infecciosas',
+    summary: [
+      'Serologias (CMV, HSV, EBV, Treponema) passam a mostrar resultado e interpretação',
+      'Deixa de aparecer "(CLIA)/(CMIA)" com o valor bruto',
+    ],
+    sections: [
+      {
+        title: 'Análises — Serologia',
+        items: [
+          'Nova secção "Serologia" com resultado qualitativo (Positivo/Negativo) por anticorpo',
+          'Linha de "Interpretação" de cada agente (ex.: "Compatível com infecção prévia")',
+          'O método e o valor bruto ("(CLIA)/(CMIA)") deixam de gerar parâmetros inúteis',
+        ]
+      },
+    ]
+  },
   {
     version: '0.8.3',
     label: 'Revisão de parâmetros protegida por código',
