@@ -650,6 +650,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',system-ui,s
                 <div class="toggle-row"><span>Mostrar microbiologia</span><label class="toggle"><input type="checkbox" id="pref_show_micro" onchange="savePref('showMicrobiology',this.checked)"><span class="toggle-slider"></span></label></div>
                 <div class="toggle-row"><span>Setas ↑↓ na tabela</span><label class="toggle"><input type="checkbox" id="pref_table_arrows" onchange="savePref('analysesTableArrows',this.checked)"><span class="toggle-slider"></span></label></div>
                 <div class="toggle-row"><span>Setas ↑↓ na impressão</span><label class="toggle"><input type="checkbox" id="pref_print_arrows" onchange="savePref('analysesPrintArrows',this.checked)"><span class="toggle-slider"></span></label></div>
+                <div style="margin-top:10px">
+                  <div style="font-size:12px;color:var(--gray-500);margin-bottom:5px">Com resultado + interpretação (serologias, hepatites)</div>
+                  <div class="radio-group">
+                    <label><input type="radio" name="pref_result_interp" value="interp" onchange="savePref('analysesResultInterp','interp')"> Só interpretação</label>
+                    <label><input type="radio" name="pref_result_interp" value="both" onchange="savePref('analysesResultInterp','both')"> Resultado + interpretação</label>
+                    <label><input type="radio" name="pref_result_interp" value="result" onchange="savePref('analysesResultInterp','result')"> Só resultado</label>
+                  </div>
+                </div>
+                <div class="toggle-row" style="margin-top:6px"><span>Aglutinar sub-análises com interpretação final</span><label class="toggle"><input type="checkbox" id="pref_aglutinate" onchange="savePref('analysesAglutinate',this.checked)"><span class="toggle-slider"></span></label></div>
               </div>
               <div class="settings-card">
                 <div class="settings-card-title">Copiar resultados</div>
@@ -947,6 +956,7 @@ const DEFAULT_PREFS = {
   analysesCopyArrows:true, analysesTableArrows:true, analysesPrintArrows:true,
   analysesDecimalSep:'keep', analysesInlineSep:', ', analysesCopyRefInline:false,
   analysesCopyPrefix:'Controlo analítico (data da colheita):',
+  analysesResultInterp:'interp', analysesAglutinate:true,
   scoreCha2ds2:false, scoreHasbled:false, scoreHeart:false, scoreGrace:false,
   scoreBarthel:false, scoreMust:false, scoreNrs2002:false, scoreLace:false,
   scoreFena:false, scoreOsmolal:false, scoreAg:false,
@@ -999,6 +1009,11 @@ function savePref(key, val) {
   prefs[key] = val;
   try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch(e) {}
   applyPrefsToUI();
+  // Estas definições mudam a forma como os blocos (serologia/hepatite) são gerados → re-parse.
+  if ((key === 'analysesResultInterp' || key === 'analysesAglutinate') && currentAnalises && currentAnalises._rows) {
+    scoreResults = {}; // parâmetros mudam → scores precisam de recálculo
+    currentAnalises = parseAnalises(currentAnalises._lines, currentAnalises._rows);
+  }
   if (currentAnalises && document.getElementById('analises-output').classList.contains('visible')) renderAnalises();
   if (currentTerapeutica && document.getElementById('terap-output').classList.contains('visible'))
     renderScheduleOutput(_terapRevMeds.filter(m => m._selected));
@@ -1047,6 +1062,8 @@ function applyPrefsToUI() {
   setCheck('pref_table_arrows', prefs.analysesTableArrows !== false);
   setCheck('pref_print_arrows', prefs.analysesPrintArrows !== false);
   setCheck('pref_copy_ref_inline', prefs.analysesCopyRefInline === true);
+  setRadio('pref_result_interp', prefs.analysesResultInterp || 'interp');
+  setCheck('pref_aglutinate', prefs.analysesAglutinate !== false);
   const pxEl = document.getElementById('pref_copy_prefix'); if (pxEl) pxEl.value = prefs.analysesCopyPrefix != null ? prefs.analysesCopyPrefix : '';
   const dsEl = document.getElementById('pref_decimal_sep'); if (dsEl) dsEl.value = prefs.analysesDecimalSep || 'keep';
   const isEl = document.getElementById('pref_inline_sep');  if (isEl) isEl.value = prefs.analysesInlineSep || ', ';
@@ -1664,6 +1681,13 @@ function titleCase(s) {
   ).join(' ');
 }
 
+// Rótulo de bloco hepatite/HIV: titleCase parte a letra da variante ("A"→"a", "HIV"→"Hiv").
+function hepLabel(s) {
+  return titleCase(s)
+    .replace(/^(Hepatite)\s+([a-eé])\b/i, (m, a, b) => a + ' ' + b.toUpperCase())
+    .replace(/\bHiv\b/g, 'HIV');
+}
+
 function truncateDrugName(nome) {
   // Keep "<INN> <dose> <unit>" — strip form description that follows (e.g. "Comp", "Susp pressu inal Recip")
   // UI|IU before U to avoid partial match; U covers insulin "100 U/ml"
@@ -2114,6 +2138,27 @@ function mkSerParam(name, valueStr, reference) {
   return { name, section:'Serologia', value:null, valueStr: valueStr || '—', unit:'', unit2:'',
            value2:null, reference: reference || '', reference2:'', previousValues:[], isAltered:false, alteredDir:null };
 }
+// Emite um bloco (serologia/hepatite) como parâmetros, respeitando as definições
+// de "resultado vs interpretação" e de aglutinação.
+function emitBlock(r, block) {
+  if (!block || (!block.tests.length && !block.interp)) return;
+  const mode = prefs.analysesResultInterp || 'interp';
+  const agg = prefs.analysesAglutinate !== false;
+  const hasInterp = !!block.interp;
+  const showResult = mode === 'result' || mode === 'both' || !hasInterp; // sem interpretação → mostra resultado
+  const showInterp = (mode === 'interp' || mode === 'both') && hasInterp;
+  const push = (name, val) => { const p = mkSerParam(name, val); p.section = block.section; r.parameters.push(p); };
+  if (agg) {
+    const parts = [];
+    if (showResult && block.tests.length)
+      parts.push(block.tests.map(t => t.result ? (t.sub ? `${t.sub}: ${t.result}` : t.result) : '').filter(Boolean).join('; '));
+    if (showInterp) parts.push(block.interp);
+    push(block.label, parts.filter(Boolean).join(' — ') || '—');
+  } else {
+    if (showResult) for (const t of block.tests) push(t.name, t.result || '—');
+    if (showInterp) push(block.label + ' — Interpretação', block.interp);
+  }
+}
 
 function parseAnalises(lines, rows) {
   const r = {patientName:'', sex:'', age:null, dob:'', date:'', parameters:[], rawLines:lines};
@@ -2123,7 +2168,8 @@ function parseAnalises(lines, rows) {
     const l = lines[i].trim();
     if (/\bNome\s*:/i.test(l)) {
       const m = l.match(/Nome\s*:\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ '\-]{3,})/i);
-      if (m) r.patientName = titleCase(m[1].trim());
+      // A layout em colunas cola rótulos da margem ao nome ("... SILVA  Pág.: 4/6").
+      if (m) r.patientName = titleCase(m[1].replace(/\s{2,}.*$/, '').replace(/\s+(?:P[áa]g|NC|Sexo|Idade|Data|M[ée]dico|Servi[çc]o|Amostra|Proc|N[ºo°])\b.*$/i, '').trim());
       else if (i+1 < lines.length) {
         const v = lines[i+1].trim();
         if (v === v.toUpperCase() && v.length > 4 && /[A-ZÀÁÂÃÉÊÍÓÔÕÚ ]/.test(v) && !/^\d/.test(v))
@@ -2151,8 +2197,10 @@ function parseAnalises(lines, rows) {
   }
 
   // Column-based parameter extraction from rows
-  let section = '', lastParam = null, serAgent = null, serEntry = null;
-  const flushSer = () => { if (serEntry) { r.parameters.push(serEntry); serEntry = null; } };
+  let section = '', lastParam = null;
+  let block = null;                 // bloco serologia/hepatite em construção
+  let inAuto = false, autoGroup = '', anaPanel = false;
+  const flushBlock = () => { if (block) { emitBlock(r, block); block = null; } };
   for (const row of rows) {
     const c = classifyRowItems(row.items);
     const nameStr = c.name.join(' ').trim();
@@ -2160,40 +2208,82 @@ function parseAnalises(lines, rows) {
     const unitStr = c.unit.join('').trim();
     const hasUnit = isKnownUnit(unitStr) || c.value.some(v => tryExtractUnitFromValue(v));
     const hasNumVal = c.value.some(v => /^[<>]?\s*\d[\d,\.]*$/.test(v) || tryExtractUnitFromValue(v));
+    const isInterp = /Interpreta[çc][ãa]o/i.test(nameStr);
+    const wideRes = row.items.filter(it => it.x >= 200).map(it => it.text).join(' ').replace(/\s+/g, ' ').trim();
+    const resNarrow = row.items.filter(it => it.x >= 200 && it.x < 305).map(it => it.text).join(' ').replace(/\s+/g, ' ').trim();
 
-    // --- Serologia (CMV, HSV, EBV, Treponema): resultado qualitativo + interpretação ---
+    // ===== BLOCO SEROLOGIA (Serologia - CMV/HSV/EBV/Treponema) =====
     const newAgent = serAgentFrom(nameStr);
-    const hasInterp = /Interpreta[çc][ãa]o/i.test(nameStr);
-    if (hasInterp && serAgent) {
-      flushSer();
-      const interp = row.items.filter(it => it.x >= 200).map(it => it.text).join(' ').replace(/\s+/g, ' ').trim();
-      if (interp) r.parameters.push(mkSerParam(serAgent + ' — Interpretação', interp));
-      if (newAgent) { serAgent = newAgent; section = 'Serologia'; } // agente seguinte colado à mesma linha
+    if (isInterp && block && block.kind === 'ser') {
+      block.interp = wideRes;
+      if (newAgent) { emitBlock(r, block); block = { kind:'ser', label:newAgent, section:'Serologia', tests:[], interp:'', _cur:null }; }
       continue;
     }
-    if (newAgent) { flushSer(); serAgent = newAgent; section = 'Serologia'; continue; }
-    if (serAgent) {
-      // Sair da serologia: secção normal, ou bloco hepatite/HIV/leptospira (formato diferente)
-      if ((nameStr && isSectionLine(nameStr)) || /^(hepatite|infec[çc][ãa]o|hiv)\b/i.test(nameStr) || /^serologia\b/i.test(nameStr.trim())) {
-        flushSer(); serAgent = null; // cai para o tratamento normal abaixo
-      } else {
-        // Linha de nome de teste (Ac. para ... IgG/IgM, Sífilis screening, EBV-VCA...)
+    if (newAgent) { flushBlock(); inAuto = false; block = { kind:'ser', label:newAgent, section:'Serologia', tests:[], interp:'', _cur:null }; section = 'Serologia'; continue; }
+
+    // ===== BLOCO HEPATITES / HIV (cabeçalho em MAIÚSCULAS "HEPATITE A", não a sub-análise "Hepatite A (IgG)") =====
+    if (/^HEPATITE\s+[A-EÉ]\b/.test(nameStr) || /^INFEC[ÇC][ÃA]O\s+HIV\b/.test(nameStr)) {
+      flushBlock(); inAuto = false;
+      block = { kind:'hep', label: hepLabel(nameStr), section:'Hepatites', tests:[], interp:'', _cur:null };
+      section = 'Hepatites'; continue;
+    }
+
+    if (block) {
+      // Interpretação do bloco (texto à direita do rótulo)
+      if (isInterp) { if (wideRes) block.interp = wideRes; continue; }
+      // Sair do bloco: secção normal ou início de outro bloco/autoimunidade
+      if ((nameStr && isSectionLine(nameStr)) || /^(serologia|autoimun|imunolog|virologia)\b/i.test(nameStr)) {
+        flushBlock();
+      } else if (block.kind === 'ser') {
         if (/(Ig[GMAE]|screening)/i.test(nameStr) && /(Ac\.?\s+para|Anticorpos?\s+para|Sífilis|EBV|HSV|Toxo|Rub[ée]ola|Citomegalo)/i.test(nameStr)) {
-          flushSer();
-          serEntry = mkSerParam(cleanSerName(nameStr), '');
-          if (valStr && SER_QUAL_RE.test(valStr)) serEntry.valueStr = valStr;
+          const nm = cleanSerName(nameStr);
+          const sub = (nm.match(/Ig[GMAE](?:\/Ig[GMAE])?/i) || [''])[0];
+          block._cur = { name: nm, sub, result: (valStr && SER_QUAL_RE.test(valStr)) ? valStr : '' };
+          block.tests.push(block._cur); continue;
+        }
+        if (SER_METHOD_RE.test(nameStr)) continue;
+        if (valStr && SER_QUAL_RE.test(valStr)) { if (block._cur && !block._cur.result) block._cur.result = valStr; continue; }
+        if (/^Qualitativo/i.test(nameStr)) { if (block._cur && valStr && SER_QUAL_RE.test(valStr)) block._cur.result = valStr; continue; }
+        continue;
+      } else if (block.kind === 'hep') {
+        if (/^Hepatite\b/i.test(nameStr) && hasNumVal) {
+          const sub = nameStr.replace(/^Hepatite\s+\S+\s*[-–]?\s*/i, '').replace(/[()]/g, '').trim();
+          let val = ''; for (const v of c.value) { if (/^[<>]?\s*\d/.test(v)) { val = v; break; } }
+          block._cur = { name: nameStr, sub, result: '', value: val };
+          block.tests.push(block._cur); continue;
+        }
+        if (/^Resultado\b/i.test(nameStr)) { if (block._cur && valStr) block._cur.result = valStr; continue; }
+        continue; // ruído (referências, thresholds)
+      }
+    }
+
+    // ===== AUTOIMUNIDADE =====
+    if (/^Autoimunidade\b/i.test(nameStr)) { flushBlock(); inAuto = true; autoGroup = 'Autoimunidade'; anaPanel = false; section = 'Autoimunidade'; continue; }
+    if (inAuto) {
+      if (isSectionLine(nameStr) || /^(serologia|hepatite|infec[çc][ãa]o|hiv|imunolog|virologia|citometria|hemograma|bioqu[íi]mica)\b/i.test(nameStr)) {
+        inAuto = false; // cai para tratamento normal
+      } else {
+        if (/^\(.*\)$/.test(nameStr)) continue;                                  // linha de método
+        if (/^(Negativo|Positivo|Equ[íi]voco|Equivoco|Clinicamente)\b/i.test(nameStr)) continue; // thresholds/limiares
+        // Sub-componente ANA (Núcleo:/Nucléolos:/Metafases:/Citoplasma:) — resultado pode ser texto largo (padrões/títulos)
+        if (/^(N[úu]cleo|N[úu]cl[ée]olos|Nucleolos|Metafases|Citoplasma)\s*:?\s*$/i.test(nameStr)) {
+          const comp = nameStr.replace(/:\s*$/, '').trim();
+          const p = mkSerParam('ANA - ' + comp, wideRes || '—'); p.section = autoGroup; r.parameters.push(p);
           continue;
         }
-        if (SER_METHOD_RE.test(nameStr)) continue;             // "(CMIA)/(CLIA)" → ignorar (era o ruído)
-        if (valStr && SER_QUAL_RE.test(valStr)) {              // resultado qualitativo isolado na coluna de valor
-          if (serEntry && (!serEntry.valueStr || serEntry.valueStr === '—')) serEntry.valueStr = valStr;
+        // Painel ANA (sem resultado próprio) — os componentes vêm a seguir
+        if (/^Ac\.?anti-?Nucleares/i.test(nameStr)) { anaPanel = true; continue; }
+        // Linha de teste "Ac.anti-XXX" com resultado (usa coluna estreita para excluir intervalo de referência)
+        if (/^Ac\b|^Ac\./i.test(nameStr)) {
+          if (resNarrow) { const p = mkSerParam(nameStr.replace(/\s+/g,' ').trim(), resNarrow); p.section = autoGroup; r.parameters.push(p); }
           continue;
         }
-        if (/^Qualitativo/i.test(nameStr)) {
-          if (serEntry && valStr && SER_QUAL_RE.test(valStr)) serEntry.valueStr = valStr;
-          continue;
+        // Cabeçalho de sub-grupo (Doenças..., Vasculites..., Artrite...) — limpar métodos colados
+        if (nameStr && !resNarrow) {
+          autoGroup = nameStr.replace(/\((?:CLIA|CMIA|CLEIA|ELISA|EIA|FEIA|IFI?|HAI|Immunoblot|Turbidimetria|Nefelometria|Imunofluoresc[êe]ncia[^)]*)\)/gi, '').replace(/\s+/g, ' ').trim();
+          anaPanel = false; continue;
         }
-        continue; // ruído (referências, comentários, validações) dentro do bloco
+        continue;
       }
     }
 
@@ -2227,9 +2317,10 @@ function parseAnalises(lines, rows) {
       }
     }
   }
-  flushSer();
+  flushBlock();
   inferMissingNames(r.parameters);
   r.microbiology = parseMicrobiology(lines);
+  r._lines = lines; r._rows = rows; // guardados para re-parse ao mudar definições de apresentação
   return r;
 }
 
@@ -4992,10 +5083,46 @@ async function pickDownloadsFolder(tab) {
 // ================================================================
 const SPLASH_KEY = 'medtools_splash_seen';
 const VERSION_KEY = 'medtools_version';
-const APP_VERSION = '0.8.4';
+const APP_VERSION = '0.8.5';
 
 // Newest first
 const PATCH_NOTES = [
+  {
+    version: '0.8.5',
+    label: 'Leitura de hepatites, VIH e autoimunidade',
+    summary: [
+      'Serologias de hepatites (A/B/C/E), infeção VIH e painéis de autoimunidade passam a ser lidos',
+      'Nova definição para escolher entre resultado, interpretação ou ambos',
+    ],
+    sections: [
+      {
+        title: 'Análises — Hepatites e VIH',
+        items: [
+          'Blocos "Hepatite A/B/C/E" e "Infeção HIV" com os anticorpos e a interpretação final',
+          'Correção: os rótulos deixam de aparecer em minúsculas ("Hepatite a", "Infecção Hiv") — agora "Hepatite A", "Infeção HIV"',
+        ]
+      },
+      {
+        title: 'Análises — Autoimunidade',
+        items: [
+          'Nova secção de autoimunidade com anticorpos (Ac.anti-…) e sub-componentes do ANA (Núcleo, Nucléolos, Metafases, Citoplasma)',
+        ]
+      },
+      {
+        title: 'Análises — Visualização',
+        items: [
+          'Definição "Resultado / Interpretação": mostrar só a interpretação (predefinição), só o resultado, ou ambos',
+          'Definição para aglutinar as sub-análises de cada bloco numa linha única',
+        ]
+      },
+      {
+        title: 'Correções',
+        items: [
+          'O nome do doente deixa de arrastar texto da margem ("… Pág.: 4/6")',
+        ]
+      },
+    ]
+  },
   {
     version: '0.8.4',
     label: 'Leitura de serologias infecciosas',
