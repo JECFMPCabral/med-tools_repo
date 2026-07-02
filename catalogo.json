@@ -298,6 +298,270 @@
       "name": "Índice Aterogénico",
       "section": "Bioquímica - Sangue",
       "unit": ""
+    },
+    {
+      "key": "troponina i - alta sensibilidade",
+      "name": "Troponina I - Alta Sensibilidade (hsTNI)",
+      "section": "Bioquímica - Sangue",
+      "unit": ""
+    },
+    {
+      "key": "acido folico",
+      "name": "Ácido Fólico",
+      "section": "Bioquímica - Vitaminas",
+      "unit": "ng/mL"
+    },
+    {
+      "key": "vitamina b12",
+      "name": "Vitamina B12",
+      "section": "Bioquímica - Vitaminas",
+      "unit": "pg/mL"
+    },
+    {
+      "key": "citomegalovirus igg",
+      "name": "Citomegalovírus IgG",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "citomegalovirus igm",
+      "name": "Citomegalovírus IgM",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "citomegalovirus — interpretacao",
+      "name": "Citomegalovírus — Interpretação",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "hsv1 igg",
+      "name": "HSV1 IgG",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "hsv2 igg",
+      "name": "HSV2 IgG",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "hsv igm",
+      "name": "HSV IgM",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "herpes simplex — interpretacao",
+      "name": "Herpes Simplex — Interpretação",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "ebv vca igg",
+      "name": "EBV VCA IgG",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "ebv vca igm",
+      "name": "EBV VCA IgM",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "sifilis screening igg/igm",
+      "name": "Sífilis screening IgG/IgM",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "treponema pallidum — interpretacao",
+      "name": "Treponema Pallidum — Interpretação",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "hepatite a",
+      "name": "Hepatite A (IgG)",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "hepatite b - hbsag",
+      "name": "Hepatite B - HBsAg",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "hepatite b - hbsac",
+      "name": "Hepatite B - HBsAc",
+      "section": "Serologia",
+      "unit": "mUI/mL"
+    },
+    {
+      "key": "hepatite c - anti hcv",
+      "name": "Hepatite C - anti HCV (IgG/IgM)",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "hepatite e - anti hev",
+      "name": "Hepatite E - anti HEV (IgG)",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "hiv 1 e 2",
+      "name": "HIV 1 e 2 (Ag/Acs)",
+      "section": "Serologia",
+      "unit": ""
+    },
+    {
+      "key": "imunoglobulina a",
+      "name": "Imunoglobulina A",
+      "section": "Imunologia",
+      "unit": "g/L"
+    },
+    {
+      "key": "ana - nucleo",
+      "name": "ANA - Núcleo",
+      "section": "Autoimunidade geral",
+      "unit": ""
+    },
+    {
+      "key": "ana - nucleolos",
+      "name": "ANA - Nucleolos",
+      "section": "Autoimunidade geral",
+      "unit": ""
+    },
+    {
+      "key": "ana - metafases",
+      "name": "ANA - Metafases",
+      "section": "Autoimunidade geral",
+      "unit": ""
+    },
+    {
+      "key": "ana - citoplasma",
+      "name": "ANA - Citoplasma",
+      "section": "Autoimunidade geral",
+      "unit": ""
+    },
+    {
+      "key": "ac.anti-ds-dna",
+      "name": "Ac.anti-ds-DNA",
+      "section": "Autoimunidade geral",
+      "unit": ""
+    },
+    {
+      "key": "ac.anti-ssa60,ssb,sm,rnp,scl70, jo1",
+      "name": "Ac.anti-SSA60,SSB,Sm,RNP,Scl70, JO1",
+      "section": "Autoimunidade geral",
+      "unit": ""
+    },
+    {
+      "key": "ac.anti-mitocondriais",
+      "name": "Ac.anti-Mitocondriais",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac.anti-piruvato dh igg-m2",
+      "name": "Ac.anti-Piruvato DH IgG-M2",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac.anti-piruvato dh (igg,iga,igm)-m2",
+      "name": "Ac.anti-Piruvato DH (IgG,IgA,IgM)-M2",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac.anti-musculo liso",
+      "name": "Ac.anti-Músculo liso",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac.anti-lkm",
+      "name": "Ac.anti-LKM",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac. anti-ssa52",
+      "name": "Ac. anti-SSA52",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac. anti-f-actina",
+      "name": "Ac. anti-F-Actina",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac. anti-sla/lp",
+      "name": "Ac. anti-SLA/LP",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac. anti-lc-1",
+      "name": "Ac. anti-Lc-1",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac. anti-lkm-1",
+      "name": "Ac. anti-LKM-1",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac. anti-gp210",
+      "name": "Ac. anti-Gp210",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac. anti-pml",
+      "name": "Ac. anti-PML",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac. anti-sp100",
+      "name": "Ac. anti-Sp100",
+      "section": "Doenças Hepáticas Autoimunes",
+      "unit": ""
+    },
+    {
+      "key": "ac.anti-gliadina deaminada iga",
+      "name": "Ac.anti-Gliadina deaminada IgA",
+      "section": "Doença Celíaca",
+      "unit": ""
+    },
+    {
+      "key": "ac.anti-gliadina deaminada igg",
+      "name": "Ac.anti-Gliadina deaminada IgG",
+      "section": "Doença Celíaca",
+      "unit": ""
+    },
+    {
+      "key": "ac.anti-transglutaminase iga",
+      "name": "Ac.anti-Transglutaminase IgA",
+      "section": "Doença Celíaca",
+      "unit": ""
+    },
+    {
+      "key": "resultado vs",
+      "name": "Resultado VS",
+      "section": "Citometria",
+      "unit": ""
     }
   ]
 }
