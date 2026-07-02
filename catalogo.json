@@ -1,7 +1,7 @@
 {
   "config": {
     "pullPolicy": "everyLoad",
-    "latestVersion": "0.8.4",
+    "latestVersion": "0.9.0",
     "appUrl": "https://raw.githubusercontent.com/JECFMPCabral/med-tools_repo/main/medtools.html"
   },
   "catalog": [
