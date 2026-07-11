@@ -671,6 +671,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',system-ui,s
                   </div>
                 </div>
                 <div class="toggle-row" style="margin-top:6px"><span>Aglutinar sub-análises com interpretação final</span><label class="toggle"><input type="checkbox" id="pref_aglutinate" onchange="savePref('analysesAglutinate',this.checked)"><span class="toggle-slider"></span></label></div>
+                <div class="toggle-row" style="margin-top:6px"><span>Imunofenotipagem detalhada (por população celular)</span><label class="toggle"><input type="checkbox" id="pref_imunofeno_detail" onchange="savePref('analysesImunofenoDetail',this.checked)"><span class="toggle-slider"></span></label></div>
+                <div style="margin-top:10px">
+                  <div style="font-size:12px;color:var(--gray-500);margin-bottom:5px">HbA1c — unidade a mostrar</div>
+                  <div class="radio-group" style="flex-direction:row;gap:16px">
+                    <label><input type="radio" name="pref_hba1c_unit" value="ngsp" onchange="savePref('analysesHba1cUnit','ngsp')"> NGSP (%)</label>
+                    <label><input type="radio" name="pref_hba1c_unit" value="ifcc" onchange="savePref('analysesHba1cUnit','ifcc')"> IFCC (mmol/mol)</label>
+                    <label><input type="radio" name="pref_hba1c_unit" value="both" onchange="savePref('analysesHba1cUnit','both')"> Ambas</label>
+                  </div>
+                </div>
               </div>
               <div class="settings-card">
                 <div class="settings-card-title">Copiar resultados</div>
@@ -969,7 +978,7 @@ const DEFAULT_PREFS = {
   analysesCopyArrows:true, analysesTableArrows:true, analysesPrintArrows:true,
   analysesDecimalSep:'keep', analysesInlineSep:', ', analysesCopyRefInline:false, analysesCopyGroup:false,
   analysesCopyPrefix:'Controlo analítico (data da colheita):',
-  analysesResultInterp:'interp', analysesAglutinate:true,
+  analysesResultInterp:'interp', analysesAglutinate:true, analysesImunofenoDetail:false, analysesHba1cUnit:'ngsp',
   scoreCha2ds2:false, scoreHasbled:false, scoreHeart:false, scoreGrace:false,
   scoreBarthel:false, scoreMust:false, scoreNrs2002:false, scoreLace:false,
   scoreFena:false, scoreOsmolal:false, scoreAg:false,
@@ -1023,7 +1032,7 @@ function savePref(key, val) {
   try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch(e) {}
   applyPrefsToUI();
   // Estas definições mudam a forma como os blocos (serologia/hepatite) são gerados → re-parse.
-  if ((key === 'analysesResultInterp' || key === 'analysesAglutinate') && currentAnalises && currentAnalises._rows) {
+  if ((key === 'analysesResultInterp' || key === 'analysesAglutinate' || key === 'analysesImunofenoDetail' || key === 'analysesHba1cUnit') && currentAnalises && currentAnalises._rows) {
     scoreResults = {}; // parâmetros mudam → scores precisam de recálculo
     currentAnalises = parseAnalises(currentAnalises._lines, currentAnalises._rows);
   }
@@ -1078,6 +1087,8 @@ function applyPrefsToUI() {
   setCheck('pref_copy_group', prefs.analysesCopyGroup === true);
   setRadio('pref_result_interp', prefs.analysesResultInterp || 'interp');
   setCheck('pref_aglutinate', prefs.analysesAglutinate !== false);
+  setCheck('pref_imunofeno_detail', prefs.analysesImunofenoDetail === true);
+  setRadio('pref_hba1c_unit', prefs.analysesHba1cUnit || 'ngsp');
   const pxEl = document.getElementById('pref_copy_prefix'); if (pxEl) pxEl.value = prefs.analysesCopyPrefix != null ? prefs.analysesCopyPrefix : '';
   const dsEl = document.getElementById('pref_decimal_sep'); if (dsEl) dsEl.value = prefs.analysesDecimalSep || 'keep';
   const isEl = document.getElementById('pref_inline_sep');  if (isEl) isEl.value = prefs.analysesInlineSep || ', ';
@@ -2155,7 +2166,37 @@ function mkSerParam(name, valueStr, reference) {
 // Emite um bloco (serologia/hepatite) como parâmetros, respeitando as definições
 // de "resultado vs interpretação" e de aglutinação.
 function emitBlock(r, block) {
-  if (!block || (!block.tests.length && !block.interp)) return;
+  if (!block) return;
+  const pushSec = (name, val) => { const p = mkSerParam(name, val); p.section = block.section; r.parameters.push(p); };
+
+  // Imunofixação: agrega numa linha se todas as cadeias derem o mesmo; senão discrimina.
+  if (block.kind === 'imfix') {
+    if (!block.tests.length) return;
+    const results = block.tests.map(t => t.result);
+    if (results.every(x => x === results[0])) pushSec('Imunofixação (soro)', results[0] || '—');
+    else for (const t of block.tests) pushSec('Imunofixação — ' + t.name, t.result || '—');
+    return;
+  }
+  // Imunofenotipagem: por defeito só o comentário; com a definição, uma linha por campo.
+  if (block.kind === 'imfeno') {
+    if (!block.fields.length) return;
+    if (prefs.analysesImunofenoDetail === true) {
+      for (const f of block.fields) { if (/^Produto/i.test(f.label)) continue; pushSec('Imunofenotipagem — ' + f.label.replace(/:\s*$/, ''), f.text || '—'); }
+    } else {
+      const com = block.fields.find(f => /^Coment/i.test(f.label)) || block.fields[block.fields.length - 1];
+      pushSec('Imunofenotipagem', (com && com.text) || '—');
+    }
+    return;
+  }
+  // Quantiferon: resultado do laboratório + observação/recomendação + valores TB1/TB2/Nil/Mitógeno.
+  if (block.kind === 'qft') {
+    if (block.result) pushSec('Quantiferon (Interferão Gama)', block.result);
+    for (const t of block.tests) pushSec('Quantiferon — ' + t.name, (t.value || '—') + (t.unit ? ' ' + t.unit : ''));
+    if (block.obs) pushSec('Quantiferon — Observação', block.obs);
+    return;
+  }
+
+  if (!block.tests.length && !block.interp) return;
   const mode = prefs.analysesResultInterp || 'interp';
   const agg = prefs.analysesAglutinate !== false;
   const hasInterp = !!block.interp;
@@ -2225,6 +2266,8 @@ function parseAnalises(lines, rows) {
     const isInterp = /Interpreta[çc][ãa]o/i.test(nameStr);
     const wideRes = row.items.filter(it => it.x >= 200).map(it => it.text).join(' ').replace(/\s+/g, ' ').trim();
     const resNarrow = row.items.filter(it => it.x >= 200 && it.x < 305).map(it => it.text).join(' ').replace(/\s+/g, ' ').trim();
+    // Carimbo de validação/rodapé (à esquerda ou à direita) — termina os blocos narrativos.
+    const isStamp = /^(Validado\s+Por|Maxdata|Diretor\s+do|Ult\.\s*Valida|Quem\s+imprim)/i.test(((nameStr || '') + ' ' + (wideRes || '')).trim());
 
     // ===== BLOCO SEROLOGIA (Serologia - CMV/HSV/EBV/Treponema) =====
     const newAgent = serAgentFrom(nameStr);
@@ -2240,6 +2283,24 @@ function parseAnalises(lines, rows) {
       flushBlock(); inAuto = false;
       block = { kind:'hep', label: hepLabel(nameStr), section:'Hepatites', tests:[], interp:'', _cur:null };
       section = 'Hepatites'; continue;
+    }
+
+    // ===== BLOCO IMUNOFIXAÇÃO (resultado textual por cadeia) =====
+    // (não mexemos na variável `section` global — o bloco emite com a sua própria secção,
+    //  e assim não vaza para os parâmetros normais que venham a seguir.)
+    if (/^Imunofixa[çc][ãa]o\b/i.test(nameStr)) {
+      flushBlock(); inAuto = false;
+      block = { kind:'imfix', section:'Imunofixação', tests:[] }; continue;
+    }
+    // ===== BLOCO IMUNOFENOTIPAGEM (relatório narrativo, campos com texto largo) =====
+    if (/^Imunofenotipagem\b/i.test(nameStr)) {
+      flushBlock(); inAuto = false;
+      block = { kind:'imfeno', section:'Imunofenotipagem', fields:[], _cur:null }; continue;
+    }
+    // ===== BLOCO QUANTIFERON / INTERFERÃO GAMA =====
+    if (/Interferon\s+Gama|Quantiferon/i.test(nameStr)) {
+      flushBlock(); inAuto = false;
+      block = { kind:'qft', section:'Quantiferon', result:'', obs:'', tests:[], _cur:null }; continue;
     }
 
     if (block) {
@@ -2268,6 +2329,35 @@ function parseAnalises(lines, rows) {
         }
         if (/^Resultado\b/i.test(nameStr)) { if (block._cur && valStr) block._cur.result = valStr; continue; }
         continue; // ruído (referências, thresholds)
+      } else if (block.kind === 'imfix') {
+        if (isStamp) { flushBlock(); }             // carimbo → terminador
+        else if (nameStr && wideRes) { block.tests.push({ name: nameStr.replace(/\s+/g, ' ').trim(), result: wideRes }); continue; }
+        else if (!nameStr && !wideRes) continue;   // linha vazia
+        else flushBlock();                         // terminador → cai para processamento normal
+      } else if (block.kind === 'imfeno') {
+        if (isStamp) { flushBlock(); }             // carimbo → terminador
+        else if (isHeaderSkip(nameStr)) continue;
+        else if (/^(Produto|Celularidade|C[ée]lulas?\b|Coment[áa]rio)/i.test(nameStr)) {
+          block._cur = { label: nameStr.replace(/\s+/g, ' ').trim(), text: wideRes }; block.fields.push(block._cur); continue;
+        }
+        else if (!nameStr && wideRes) { if (block._cur) block._cur.text = (block._cur.text ? block._cur.text + ' ' : '') + wideRes; continue; }
+        else if (!nameStr && !wideRes) continue;
+        else flushBlock();                         // terminador
+      } else if (block.kind === 'qft') {
+        if (isStamp) { flushBlock(); }             // carimbo → terminador
+        else if (/^Resultado\b/i.test(nameStr)) { if (wideRes) block.result = wideRes; block._cur = 'result'; continue; }
+        else if (/^Observa[çc][ãa]o\b/i.test(nameStr)) { if (wideRes) block.obs = wideRes; block._cur = 'obs'; continue; }
+        else if (/^(TB\s?\d|Nil\b|Mit[óo]geno)/i.test(nameStr)) {
+          let val = ''; for (const v of c.value) { if (/^[<>]?\s*\d/.test(v)) { val = v; break; } }
+          block.tests.push({ name: nameStr.replace(/\s+/g, ' ').trim(), value: val, unit: isKnownUnit(unitStr) ? unitStr : '' }); block._cur = null; continue;
+        }
+        else if (!nameStr && wideRes) {            // continuação de texto envolvido (Resultado/Observação)
+          if (block._cur === 'obs') block.obs += ' ' + wideRes;
+          else if (block._cur === 'result') block.result += ' ' + wideRes;
+          continue;
+        }
+        else if (isHeaderSkip(nameStr) || !nameStr) continue; // ruído/thresholds/vazio
+        else flushBlock();                         // terminador
       }
     }
 
@@ -2302,7 +2392,13 @@ function parseAnalises(lines, rows) {
     }
 
     if (!hasUnit && !hasNumVal) {
-      if (nameStr && isSectionLine(nameStr)) section = nameStr;
+      if (nameStr && isSectionLine(nameStr)) { section = nameStr; continue; }
+      // Itens qualitativos da sumária de urina (Glicose/Cetonas/Proteínas/Nitritos = Negativo,
+      // Cilindros = Não observados, Células epiteliais = Algumas...) — texto sem valor numérico.
+      if (URINE_SEC_RE.test(section) && wideRes && isParamName(nameStr) && !isHeaderSkip(nameStr)) {
+        const p = mkSerParam(nameStr.replace(/\s+/g, ' ').trim(), wideRes);
+        p.section = section; r.parameters.push(p); lastParam = p;
+      }
       continue;
     }
 
@@ -2333,9 +2429,24 @@ function parseAnalises(lines, rows) {
   }
   flushBlock();
   inferMissingNames(r.parameters);
+  r.parameters = filterHba1cUnit(r.parameters);
   r.microbiology = parseMicrobiology(lines);
   r._lines = lines; r._rows = rows; // guardados para re-parse ao mudar definições de apresentação
   return r;
+}
+
+// A HbA1c vem em duas linhas (NGSP em % e IFCC em mmol/mol). Deixa mostrar só uma, ou ambas.
+function filterHba1cUnit(params) {
+  const mode = prefs.analysesHba1cUnit || 'both';
+  if (mode === 'both') return params;
+  return params.filter(p => {
+    if (!/hba1c|hemoglobina\s+glicada/i.test(p.name || '')) return true;
+    const isIfcc = /ifcc/i.test(p.name) || /mmol\/mol/i.test(p.unit || '');
+    const isNgsp = /ngsp/i.test(p.name) || (p.unit || '').trim() === '%';
+    if (mode === 'ngsp') return !isIfcc;
+    if (mode === 'ifcc') return !isNgsp;
+    return true;
+  });
 }
 
 function parseMicrobiology(lines) {
@@ -2581,6 +2692,22 @@ function getCatalogMap() {
   return map;
 }
 function catalogGet(key) { return getCatalogMap().get(key); }
+
+// Secção de um parâmetro para agrupamento: a do catálogo, EXCETO quando cruzaria
+// domínios (ex.: "Leucócitos"/"Creatinina" da urina normalizam para a mesma chave
+// que os do sangue) — aí mantém a secção que veio do PDF.
+const URINE_SEC_RE = /urina|sedimento|f[íi]sico-?qu[íi]mic/i;
+function catalogSectionOf(par, catMap) {
+  const pdfSec = par.section || 'Geral';
+  const e = par._key && catMap.get(par._key);
+  let sec;
+  if (!e || !e.section) sec = pdfSec;
+  else if (URINE_SEC_RE.test(pdfSec) !== URINE_SEC_RE.test(e.section)) sec = pdfSec; // domínios diferentes → não cruzar
+  else sec = e.section;
+  // Consolida as várias sub-secções da urina (sumária/físico-químicas/sedimento/amostra única) numa só.
+  if (URINE_SEC_RE.test(sec)) return 'Urina';
+  return sec;
+}
 
 // Liga cada parâmetro do PDF ao catálogo; regista descobertas locais novas.
 function reconcileCatalog(params) {
@@ -2959,7 +3086,7 @@ function renderAnalises() {
   if (!showScoresOnly) {
     // Agrupa pela secção do CATÁLOGO (não a do PDF); ordena os grupos pela ordem do catálogo.
     const catMap = getCatalogMap();
-    const secOf = (par) => { const e = par._key && catMap.get(par._key); return (e && e.section) || par.section || 'Geral'; };
+    const secOf = (par) => catalogSectionOf(par, catMap);
     const catOrder = new Map();
     let _oi = 0;
     for (const e of catMap.values()) { const s = e.section || 'Geral'; if (!catOrder.has(s)) catOrder.set(s, _oi++); }
@@ -3066,7 +3193,7 @@ function copyAnalisesOutput() {
   const groups = [];
   if (byGroup) {
     const catMap = getCatalogMap();
-    const secOf = (p) => { const e = p._key && catMap.get(p._key); return (e && e.section) || p.section || 'Geral'; };
+    const secOf = (p) => catalogSectionOf(p, catMap);
     const catOrder = new Map();
     let oi = 0;
     for (const e of catMap.values()) { const s = e.section || 'Geral'; if (!catOrder.has(s)) catOrder.set(s, oi++); }
@@ -5139,10 +5266,36 @@ async function pickDownloadsFolder(tab) {
 // ================================================================
 const SPLASH_KEY = 'medtools_splash_seen';
 const VERSION_KEY = 'medtools_version';
-const APP_VERSION = '0.9.0';
+const APP_VERSION = '0.9.1';
 
 // Newest first
 const PATCH_NOTES = [
+  {
+    version: '0.9.1',
+    label: 'Imunofixação, imunofenotipagem e Quantiferon',
+    summary: [
+      'Passam a ser lidas três secções antes ignoradas: imunofixação, imunofenotipagem e Quantiferon',
+    ],
+    sections: [
+      {
+        title: 'Análises — novas leituras',
+        items: [
+          'Imunofixação (soro): resultado agregado numa linha; discrimina por cadeia se alguma diferir',
+          'Quantiferon (Interferão Gama): resultado do laboratório + observação/recomendação + valores TB1/TB2/Nil/Mitógeno, na secção correta',
+          'Imunofenotipagem: por defeito mostra a conclusão; nova definição "Imunofenotipagem detalhada" para ver por população celular (Celularidade, Células T/B/NK, Comentário)',
+          'HbA1c: nova definição para escolher a unidade a mostrar — NGSP (%), IFCC (mmol/mol) ou ambas (predefinição: %)',
+          'Sumária de urina completa: passam a ser lidos também os itens qualitativos (Glicose/Cetonas/Proteínas/Nitritos = Negativo, aspecto, sedimento, cilindros, cristais) e não só os numéricos',
+        ]
+      },
+      {
+        title: 'Correções',
+        items: [
+          'Parâmetros da sumária de urina (leucócitos, eritrócitos, hemoglobina, creatinina) deixam de ser agrupados no hemograma/sangue',
+          'A urina passa a aparecer numa só secção "Urina" (antes ficava dispersa por físico-químicas, sedimento e amostra única)',
+        ]
+      },
+    ]
+  },
   {
     version: '0.9.0',
     label: 'Renovação visual e cópia por grupos',
